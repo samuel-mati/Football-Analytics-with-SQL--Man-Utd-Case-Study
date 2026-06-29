@@ -4,7 +4,7 @@
 
 ## 🌐 Live Project
 
-** [Launch the Interactive Football Match Intelligence System](https://samuel-mati.github.io/Football-Analytics-with-SQL--Man-Utd-Case-Study/)**
+**[Launch the Interactive Football Match Intelligence System](https://samuel-mati.github.io/Football-Analytics-with-SQL--Man-Utd-Case-Study/)**
 
 ---
 
