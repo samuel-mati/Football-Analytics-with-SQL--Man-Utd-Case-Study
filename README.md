@@ -2,6 +2,12 @@
 
 ![Football Match Intelligence System](landing.png)
 
+## 🌐 Live Project
+
+** [Launch the Interactive Football Match Intelligence System](https://samuel-mati.github.io/Football-Analytics-with-SQL--Man-Utd-Case-Study/)**
+
+---
+
 ## Can SQL Explain Manchester United's 2023/24 Season?
 
 Football generates thousands of data points every match—goals, passes, formations, substitutions, cards, expected goals (xG), and countless tactical events. But raw data rarely explains **why** a team wins, loses, or underperforms.
@@ -29,7 +35,7 @@ What questions would you ask?
 
 Every one of these questions is answered with SQL.
 
-
+---
 
 ## What's Inside
 
@@ -40,6 +46,7 @@ This project combines a realistic Premier League dataset with advanced PostgreSQ
 - **3 materialized views** for dashboard-ready reporting
 - **500+ rows** of realistic Premier League data
 
+---
 
 ## SQL Techniques Demonstrated
 
@@ -54,7 +61,7 @@ This project combines a realistic Premier League dataset with advanced PostgreSQ
 - Query Optimization
 - Dashboard-ready Views
 
-
+---
 
 ## Why This Project?
 
