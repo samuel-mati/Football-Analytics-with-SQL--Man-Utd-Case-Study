@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Football Match Intelligence System — SQL Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  /* ── TOKENS ─────────────────────────────────────────── */
+  :root {
+    --red:      #DA291C;
+    --red-dark: #a51e13;
+    --red-dim:  rgba(218,41,28,0.15);
+    --gold:     #FBE122;
+    --black:    #0A0A0A;
+    --surface:  #111111;
+    --card:     #181818;
+    --border:   #2a2a2a;
+    --text:     #E8E8E8;
+    --muted:    #888;
+    --code-bg:  #0d1117;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body:    'Inter', sans-serif;
+    --font-code:    'JetBrains Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ──────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
+  /* ── LAYOUT ─────────────────────────────────────────── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ── NAV ────────────────────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em;
+    color: var(--text);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-badge {
+    background: var(--red);
+    color: #fff; font-size: 0.65rem; font-weight: 700;
+    padding: 2px 7px; border-radius: 2px; letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none;
+    font-size: 0.82rem; font-weight: 500; letter-spacing: 0.04em;
+    text-transform: uppercase; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── HERO ───────────────────────────────────────────── */
+  .hero {
+    padding: 100px 0 80px;
+    border-bottom: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .hero-pitch {
+    position: absolute; right: -80px; top: 50%; transform: translateY(-50%);
+    width: 520px; height: 520px; opacity: 0.04;
+  }
+  .hero-eyebrow {
+    font-family: var(--font-code);
+    font-size: 0.75rem; color: var(--red);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 800; line-height: 0.95;
+    text-transform: uppercase; letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+  .hero h1 em { color: var(--red); font-style: normal; }
+  .hero-sub {
+    max-width: 520px; color: var(--muted);
+    font-size: 1rem; line-height: 1.7; margin-bottom: 40px;
+  }
+  .hero-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 48px; }
+  .tag {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-code);
+    font-size: 0.72rem; padding: 4px 10px; border-radius: 2px;
+    letter-spacing: 0.06em;
+  }
+  .tag.accent { border-color: var(--red-dim); color: var(--red); background: var(--red-dim); }
+
+  /* ── STATS ROW ──────────────────────────────────────── */
+  .stats-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; max-width: 640px;
+  }
+  .stat-cell {
+    padding: 20px 24px; border-right: 1px solid var(--border);
+    background: var(--card);
+  }
+  .stat-cell:last-child { border-right: none; }
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: 2.4rem; font-weight: 800; color: var(--text);
+    line-height: 1;
+  }
+  .stat-num span { color: var(--red); }
+  .stat-label {
+    font-size: 0.72rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+
+  /* ── SECTION HEADS ──────────────────────────────────── */
+  .section { padding: 80px 0; border-bottom: 1px solid var(--border); }
+  .section-head {
+    display: flex; align-items: baseline; gap: 16px;
+    margin-bottom: 48px;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 2.2rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.02em;
+  }
+  .section-line {
+    flex: 1; height: 1px; background: var(--border);
+    margin-bottom: 4px;
+  }
+
+  /* ── SCHEMA ─────────────────────────────────────────── */
+  .schema-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .schema-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 20px; position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .schema-card:hover { border-color: var(--red); transform: translateY(-2px); }
+  .schema-card-name {
+    font-family: var(--font-code); font-size: 0.85rem;
+    color: var(--gold); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .schema-card-name::before {
+    content: '▶'; font-size: 0.5rem; color: var(--red);
+  }
+  .schema-field {
+    display: flex; justify-content: space-between;
+    font-size: 0.75rem; padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .schema-field:last-child { border-bottom: none; }
+  .field-name { font-family: var(--font-code); color: var(--text); }
+  .field-type { color: var(--muted); font-family: var(--font-code); }
+  .field-pk   { color: var(--gold); }
+  .field-fk   { color: #7dd3fc; }
+
+  /* ── QUERIES ────────────────────────────────────────── */
+  .query-list { display: flex; flex-direction: column; gap: 24px; }
+  .query-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; overflow: hidden;
+  }
+  .query-header {
+    padding: 18px 24px; display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .query-header:hover { background: rgba(255,255,255,0.02); }
+  .query-meta { flex: 1; }
+  .query-num {
+    font-family: var(--font-code); font-size: 0.7rem;
+    color: var(--red); letter-spacing: 0.1em; margin-bottom: 4px;
+  }
+  .query-title {
+    font-family: var(--font-display); font-size: 1.3rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .query-q {
+    margin-top: 6px; font-size: 0.82rem; color: var(--muted);
+    font-style: italic;
+  }
+  .query-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pill {
+    font-family: var(--font-code); font-size: 0.65rem;
+    padding: 2px 8px; border-radius: 2px; text-transform: uppercase;
+    letter-spacing: 0.07em;
+    background: rgba(251,225,34,0.08); color: var(--gold);
+    border: 1px solid rgba(251,225,34,0.2);
+  }
+  .query-toggle {
+    font-size: 1.2rem; color: var(--muted); transition: transform 0.2s;
+    flex-shrink: 0; padding-top: 2px;
+  }
+  .query-toggle.open { transform: rotate(180deg); color: var(--red); }
+  .query-body {
+    display: none; padding: 0;
+    background: var(--code-bg);
+  }
+  .query-body.open { display: block; }
+  pre {
+    padding: 24px;
+    font-family: var(--font-code);
+    font-size: 0.78rem; line-height: 1.7;
+    overflow-x: auto; color: #c9d1d9;
+    white-space: pre;
+  }
+  /* Syntax highlight */
+  .kw  { color: #ff7b72; }
+  .fn  { color: #d2a8ff; }
+  .str { color: #a5d6ff; }
+  .cmt { color: #555; font-style: italic; }
+  .num { color: #79c0ff; }
+
+  /* ── VIEWS ──────────────────────────────────────────── */
+  .views-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .view-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 4px; padding: 28px;
+    border-top: 3px solid var(--red);
+  }
+  .view-name {
+    font-family: var(--font-code); font-size: 0.8rem;
+    color: var(--gold); margin-bottom: 12px;
+  }
+  .view-title {
+    font-family: var(--font-display); font-size: 1.25rem;
+    font-weight: 700; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .view-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .view-cols { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .view-col {
+    font-family: var(--font-code); font-size: 0.68rem;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 2px; color: var(--muted);
+  }
+
+  /* ── ABOUT ──────────────────────────────────────────── */
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+  .about-text p { color: var(--muted); margin-bottom: 16px; line-height: 1.8; }
+  .about-text p strong { color: var(--text); }
+  .tech-stack { display: flex; flex-direction: column; gap: 12px; }
+  .tech-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+  }
+  .tech-icon { font-size: 1.4rem; }
+  .tech-info {}
+  .tech-name { font-weight: 600; font-size: 0.9rem; }
+  .tech-detail { font-size: 0.78rem; color: var(--muted); }
+
+  /* ── FOOTER ─────────────────────────────────────────── */
+  footer {
+    padding: 48px 0; text-align: center;
+    color: var(--muted); font-size: 0.8rem;
+  }
+  footer strong { color: var(--red); }
+
+  /* ── PITCH SVG ──────────────────────────────────────── */
+  .pitch-decoration {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 420px; height: 420px; opacity: 0.06; pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+    .about-grid  { grid-template-columns: 1fr; }
+    .nav-links   { display: none; }
+    .pitch-decoration { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <span>FMIS</span>
+      <span class="nav-badge">PostgreSQL</span>
+    </div>
+    <div class="nav-links">
+      <a href="#schema">Schema</a>
+      <a href="#queries">Queries</a>
+      <a href="#views">Views</a>
+      <a href="#about">About</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <!-- Pitch decoration -->
+    <svg class="pitch-decoration" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="20" width="360" height="360" stroke="white" stroke-width="2"/>
+      <line x1="20" y1="200" x2="380" y2="200" stroke="white" stroke-width="1.5"/>
+      <circle cx="200" cy="200" r="60" stroke="white" stroke-width="1.5"/>
+      <circle cx="200" cy="200" r="3" fill="white"/>
+      <rect x="20" y="140" width="70" height="120" stroke="white" stroke-width="1.5"/>
+      <rect x="310" y="140" width="70" height="120" stroke="white" stroke-width="1.5"/>
+      <rect x="20" y="165" width="30" height="70" stroke="white" stroke-width="1.5"/>
+      <rect x="350" y="165" width="30" height="70" stroke="white" stroke-width="1.5"/>
+      <circle cx="90" cy="200" r="3" fill="white"/>
+      <circle cx="310" cy="200" r="3" fill="white"/>
+    </svg>
+
+    <p class="hero-eyebrow">// SQL Portfolio Project · 2024</p>
+    <h1>Football<br/><em>Match</em><br/>Intelligence</h1>
+    <p class="hero-sub">
+      A tactical analytics database built on <strong>Premier League 2023/24</strong> data,
+      with a focused lens on <strong>Manchester United</strong>. Eight relational tables,
+      ten advanced queries, and three materialized views — designed to answer the 
+      questions a real football analyst would ask.
+    </p>
+    <div class="hero-tags">
+      <span class="tag accent">PostgreSQL</span>
+      <span class="tag">Window Functions</span>
+      <span class="tag">Recursive CTEs</span>
+      <span class="tag">Materialized Views</span>
+      <span class="tag">Indexes</span>
+      <span class="tag">xG Analysis</span>
+      <span class="tag">Tactical Data</span>
+    </div>
+
+    <div class="stats-strip">
+      <div class="stat-cell">
+        <div class="stat-num">8<span>+</span></div>
+        <div class="stat-label">Tables</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">10</div>
+        <div class="stat-label">Queries</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Mat. Views</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">500<span>+</span></div>
+        <div class="stat-label">Rows</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEMA -->
+<section class="section" id="schema">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title">Database Schema</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="schema-grid">
+
+      <div class="schema-card">
+        <div class="schema-card-name">teams</div>
+        <div class="schema-field"><span class="field-name field-pk">team_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name">name</span><span class="field-type">VARCHAR</span></div>
+        <div class="schema-field"><span class="field-name">stadium</span><span class="field-type">VARCHAR</span></div>
+        <div class="schema-field"><span class="field-name">manager</span><span class="field-type">VARCHAR</span></div>
+        <div class="schema-field"><span class="field-name">stadium_capacity</span><span class="field-type">INT</span></div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-name">players</div>
+        <div class="schema-field"><span class="field-name field-pk">player_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name field-fk">team_id</span><span class="field-type">FK → teams</span></div>
+        <div class="schema-field"><span class="field-name">position</span><span class="field-type">ENUM</span></div>
+        <div class="schema-field"><span class="field-name">market_value_m</span><span class="field-type">NUMERIC</span></div>
+        <div class="schema-field"><span class="field-name">nationality</span><span class="field-type">VARCHAR</span></div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-name">matches</div>
+        <div class="schema-field"><span class="field-name field-pk">match_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name field-fk">home_team_id</span><span class="field-type">FK → teams</span></div>
+        <div class="schema-field"><span class="field-name field-fk">away_team_id</span><span class="field-type">FK → teams</span></div>
+        <div class="schema-field"><span class="field-name">home_xg / away_xg</span><span class="field-type">NUMERIC</span></div>
+        <div class="schema-field"><span class="field-name">stage</span><span class="field-type">ENUM</span></div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-name">match_events</div>
+        <div class="schema-field"><span class="field-name field-pk">event_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name field-fk">match_id</span><span class="field-type">FK → matches</span></div>
+        <div class="schema-field"><span class="field-name field-fk">player_id</span><span class="field-type">FK → players</span></div>
+        <div class="schema-field"><span class="field-name">event_type</span><span class="field-type">ENUM</span></div>
+        <div class="schema-field"><span class="field-name">pitch_zone</span><span class="field-type">ENUM</span></div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-name">player_match_stats</div>
+        <div class="schema-field"><span class="field-name field-pk">stat_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name field-fk">player_id</span><span class="field-type">FK → players</span></div>
+        <div class="schema-field"><span class="field-name">goals / assists / xg</span><span class="field-type">INT/NUM</span></div>
+        <div class="schema-field"><span class="field-name">pass_accuracy</span><span class="field-type">COMPUTED</span></div>
+        <div class="schema-field"><span class="field-name">distance_km</span><span class="field-type">NUMERIC</span></div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-name">tactical_formations</div>
+        <div class="schema-field"><span class="field-name field-pk">formation_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name field-fk">match_id</span><span class="field-type">FK → matches</span></div>
+        <div class="schema-field"><span class="field-name field-fk">team_id</span><span class="field-type">FK → teams</span></div>
+        <div class="schema-field"><span class="field-name">formation_name</span><span class="field-type">VARCHAR</span></div>
+        <div class="schema-field"><span class="field-name">applied_minute</span><span class="field-type">INT</span></div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-name">match_lineups</div>
+        <div class="schema-field"><span class="field-name field-pk">lineup_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name field-fk">match_id</span><span class="field-type">FK → matches</span></div>
+        <div class="schema-field"><span class="field-name field-fk">player_id</span><span class="field-type">FK → players</span></div>
+        <div class="schema-field"><span class="field-name">is_starter</span><span class="field-type">BOOLEAN</span></div>
+        <div class="schema-field"><span class="field-name">minutes_played</span><span class="field-type">INT</span></div>
+      </div>
+
+      <div class="schema-card">
+        <div class="schema-card-name">standings</div>
+        <div class="schema-field"><span class="field-name field-pk">standing_id</span><span class="field-type">SERIAL PK</span></div>
+        <div class="schema-field"><span class="field-name field-fk">team_id</span><span class="field-type">FK → teams</span></div>
+        <div class="schema-field"><span class="field-name">matchweek</span><span class="field-type">INT</span></div>
+        <div class="schema-field"><span class="field-name">goal_diff</span><span class="field-type">GENERATED</span></div>
+        <div class="schema-field"><span class="field-name">points</span><span class="field-type">GENERATED</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- QUERIES -->
+<section class="section" id="queries">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title">Analytics Queries</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="query-list">
+
+      <!-- Q1 -->
+      <div class="query-card">
+        <div class="query-header" onclick="toggle(this)">
+          <div class="query-meta">
+            <div class="query-num">QUERY 01</div>
+            <div class="query-title">Rolling 5-Match Form Table</div>
+            <div class="query-q">"How has United's form evolved across the season?"</div>
+            <div class="query-pills">
+              <span class="pill">Window Function</span>
+              <span class="pill">STRING_AGG</span>
+              <span class="pill">CTE</span>
+            </div>
+          </div>
+          <div class="query-toggle">▾</div>
+        </div>
+        <div class="query-body">
+<pre><span class="cmt">-- Rolling 5-match form: W/D/L string + points for last 5 games</span>
+<span class="kw">WITH</span> match_results <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    m.match_date, m.stage,
+    <span class="kw">CASE</span> <span class="kw">WHEN</span> m.home_team_id = <span class="num">1</span> <span class="kw">THEN</span> m.home_goals <span class="kw">ELSE</span> m.away_goals <span class="kw">END</span> <span class="kw">AS</span> utd_goals,
+    <span class="kw">CASE</span> <span class="kw">WHEN</span> m.home_team_id = <span class="num">1</span> <span class="kw">THEN</span> m.away_goals <span class="kw">ELSE</span> m.home_goals <span class="kw">END</span> <span class="kw">AS</span> opp_goals
+  <span class="kw">FROM</span> matches m
+  <span class="kw">WHERE</span> m.home_team_id = <span class="num">1</span> <span class="kw">OR</span> m.away_team_id = <span class="num">1</span>
+),
+rolling_form <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> *,
+    <span class="fn">STRING_AGG</span>(
+      <span class="kw">CASE</span>
+        <span class="kw">WHEN</span> utd_goals > opp_goals <span class="kw">THEN</span> <span class="str">'W'</span>
+        <span class="kw">WHEN</span> utd_goals = opp_goals <span class="kw">THEN</span> <span class="str">'D'</span>
+        <span class="kw">ELSE</span> <span class="str">'L'</span>
+      <span class="kw">END</span>, <span class="str">''</span> <span class="kw">ORDER BY</span> match_date
+    ) <span class="kw">OVER</span> (
+      <span class="kw">ORDER BY</span> match_date
+      <span class="kw">ROWS BETWEEN</span> <span class="num">4</span> <span class="kw">PRECEDING AND CURRENT ROW</span>
+    ) <span class="kw">AS</span> last_5_form
+  <span class="kw">FROM</span> match_results
+)
+<span class="kw">SELECT</span> match_date, stage, last_5_form
+<span class="kw">FROM</span> rolling_form <span class="kw">ORDER BY</span> match_date;</pre>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="query-card">
+        <div class="query-header" onclick="toggle(this)">
+          <div class="query-meta">
+            <div class="query-num">QUERY 02</div>
+            <div class="query-title">Bruno Fernandes by Formation</div>
+            <div class="query-q">"Is Bruno more effective as a #10 in 4-2-3-1 than in a 4-3-3?"</div>
+            <div class="query-pills">
+              <span class="pill">JOIN</span>
+              <span class="pill">GROUP BY</span>
+              <span class="pill">ROUND / NULLIF</span>
+            </div>
+          </div>
+          <div class="query-toggle">▾</div>
+        </div>
+        <div class="query-body">
+<pre><span class="kw">SELECT</span>
+  tf.formation_name,
+  <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> pms.match_id)           <span class="kw">AS</span> matches,
+  <span class="fn">SUM</span>(pms.goals + pms.assists)            <span class="kw">AS</span> goal_contributions,
+  <span class="fn">ROUND</span>(<span class="fn">AVG</span>(pms.key_passes), <span class="num">1</span>)          <span class="kw">AS</span> avg_key_passes,
+  <span class="fn">ROUND</span>(
+    <span class="fn">SUM</span>(pms.passes_completed)::<span class="kw">NUMERIC</span>
+    / <span class="fn">NULLIF</span>(<span class="fn">SUM</span>(pms.passes_attempted), <span class="num">0</span>) * <span class="num">100</span>, <span class="num">1</span>
+  )                                         <span class="kw">AS</span> pass_accuracy_pct,
+  <span class="fn">ROUND</span>(<span class="fn">AVG</span>(pms.rating), <span class="num">2</span>)               <span class="kw">AS</span> avg_rating
+<span class="kw">FROM</span> player_match_stats pms
+<span class="kw">JOIN</span> tactical_formations tf
+  <span class="kw">ON</span> tf.match_id = pms.match_id
+  <span class="kw">AND</span> tf.team_id = pms.team_id
+  <span class="kw">AND</span> tf.is_starting = <span class="kw">TRUE</span>
+<span class="kw">WHERE</span> pms.player_id = <span class="num">8</span>  <span class="cmt">-- Bruno Fernandes</span>
+<span class="kw">GROUP BY</span> tf.formation_name
+<span class="kw">ORDER BY</span> avg_rating <span class="kw">DESC</span>;</pre>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="query-card">
+        <div class="query-header" onclick="toggle(this)">
+          <div class="query-meta">
+            <div class="query-num">QUERY 03</div>
+            <div class="query-title">Home vs Away Performance Split</div>
+            <div class="query-q">"Is Old Trafford still a fortress, or are United just as leaky at home?"</div>
+            <div class="query-pills">
+              <span class="pill">CASE WHEN</span>
+              <span class="pill">GROUP BY</span>
+              <span class="pill">Points Per Game</span>
+            </div>
+          </div>
+          <div class="query-toggle">▾</div>
+        </div>
+        <div class="query-body">
+<pre><span class="kw">SELECT</span>
+  venue_type,
+  <span class="fn">COUNT</span>(*)                                                  <span class="kw">AS</span> matches,
+  <span class="fn">SUM</span>(<span class="kw">CASE WHEN</span> utd_goals > opp_goals <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>)  <span class="kw">AS</span> wins,
+  <span class="fn">SUM</span>(utd_goals) - <span class="fn">SUM</span>(opp_goals)                        <span class="kw">AS</span> goal_difference,
+  <span class="fn">ROUND</span>(<span class="fn">AVG</span>(utd_xg), <span class="num">2</span>)                                   <span class="kw">AS</span> avg_xg_for,
+  <span class="fn">ROUND</span>(<span class="fn">AVG</span>(opp_xg), <span class="num">2</span>)                                   <span class="kw">AS</span> avg_xg_against,
+  <span class="fn">ROUND</span>(
+    <span class="fn">SUM</span>(<span class="kw">CASE WHEN</span> utd_goals > opp_goals <span class="kw">THEN</span> <span class="num">3</span>
+             <span class="kw">WHEN</span> utd_goals = opp_goals <span class="kw">THEN</span> <span class="num">1</span>
+             <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>)::<span class="kw">NUMERIC</span> / <span class="fn">COUNT</span>(*), <span class="num">2</span>
+  )                                                         <span class="kw">AS</span> points_per_game
+<span class="kw">FROM</span> utd_matches
+<span class="kw">GROUP BY</span> venue_type;</pre>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="query-card">
+        <div class="query-header" onclick="toggle(this)">
+          <div class="query-meta">
+            <div class="query-num">QUERY 04</div>
+            <div class="query-title">xG Overperformance Analysis</div>
+            <div class="query-q">"Which matches did luck decide? Where is United punching above its weight?"</div>
+            <div class="query-pills">
+              <span class="pill">xG Model</span>
+              <span class="pill">CASE WHEN</span>
+              <span class="pill">Derived Columns</span>
+            </div>
+          </div>
+          <div class="query-toggle">▾</div>
+        </div>
+        <div class="query-body">
+<pre><span class="kw">SELECT</span>
+  match_date, opponent, actual_goals || <span class="str">'-'</span> || opp_goals <span class="kw">AS</span> score,
+  xg <span class="kw">AS</span> utd_xg,
+  <span class="fn">ROUND</span>(actual_goals - xg, <span class="num">2</span>)   <span class="kw">AS</span> xg_overperformance,
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> actual_goals - xg >  <span class="num">0.5</span> <span class="kw">THEN</span> <span class="str">'Outperformed xG'</span>
+    <span class="kw">WHEN</span> actual_goals - xg < -<span class="num">0.5</span> <span class="kw">THEN</span> <span class="str">'Underperformed xG'</span>
+    <span class="kw">ELSE</span> <span class="str">'In line with xG'</span>
+  <span class="kw">END</span>                             <span class="kw">AS</span> xg_verdict,
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> <span class="fn">ROUND</span>(xg) > <span class="fn">ROUND</span>(opp_xg) <span class="kw">THEN</span> <span class="str">'xG Win'</span>
+    <span class="kw">WHEN</span> <span class="fn">ROUND</span>(xg) = <span class="fn">ROUND</span>(opp_xg) <span class="kw">THEN</span> <span class="str">'xG Draw'</span>
+    <span class="kw">ELSE</span> <span class="str">'xG Loss'</span>
+  <span class="kw">END</span>                             <span class="kw">AS</span> xg_expected_result
+<span class="kw">FROM</span> xg_analysis
+<span class="kw">ORDER BY</span> xg_overperformance <span class="kw">DESC</span>;</pre>
+        </div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="query-card">
+        <div class="query-header" onclick="toggle(this)">
+          <div class="query-meta">
+            <div class="query-num">QUERY 05</div>
+            <div class="query-title">Points Dropped from Winning Positions</div>
+            <div class="query-q">"How often did United lead and fail to hold on?"</div>
+            <div class="query-pills">
+              <span class="pill">Window Function</span>
+              <span class="pill">SUM OVER</span>
+              <span class="pill">LEFT JOIN</span>
+            </div>
+          </div>
+          <div class="query-toggle">▾</div>
+        </div>
+        <div class="query-body">
+<pre><span class="kw">WITH</span> running_score <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    me.match_id, me.minute,
+    <span class="fn">SUM</span>(<span class="kw">CASE WHEN</span> me.team_id = <span class="num">1</span> <span class="kw">AND</span> me.event_type = <span class="str">'goal'</span>
+             <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>)
+      <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> me.match_id <span class="kw">ORDER BY</span> me.minute) <span class="kw">AS</span> utd_running,
+    <span class="fn">SUM</span>(<span class="kw">CASE WHEN</span> me.team_id != <span class="num">1</span> <span class="kw">AND</span> me.event_type = <span class="str">'goal'</span>
+             <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>)
+      <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> me.match_id <span class="kw">ORDER BY</span> me.minute) <span class="kw">AS</span> opp_running
+  <span class="kw">FROM</span> match_events me
+),
+had_lead <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> match_id,
+    <span class="fn">MAX</span>(<span class="kw">CASE WHEN</span> utd_running > opp_running <span class="kw">THEN</span> <span class="num">1</span> <span class="kw">ELSE</span> <span class="num">0</span> <span class="kw">END</span>) <span class="kw">AS</span> was_winning
+  <span class="kw">FROM</span> running_score
+  <span class="kw">GROUP BY</span> match_id
+)
+<span class="kw">SELECT</span>
+  fr.opponent, fr.final_score,
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> hl.was_winning = <span class="num">1</span> <span class="kw">AND</span> result = <span class="str">'L'</span> <span class="kw">THEN</span> <span class="str">'Points dropped (loss)'</span>
+    <span class="kw">WHEN</span> hl.was_winning = <span class="num">1</span> <span class="kw">AND</span> result = <span class="str">'D'</span> <span class="kw">THEN</span> <span class="str">'Points dropped (draw)'</span>
+    <span class="kw">WHEN</span> hl.was_winning = <span class="num">1</span>               <span class="kw">THEN</span> <span class="str">'Lead held'</span>
+    <span class="kw">ELSE</span> <span class="str">'Never led'</span>
+  <span class="kw">END</span> <span class="kw">AS</span> outcome
+<span class="kw">FROM</span> final_results fr
+<span class="kw">LEFT JOIN</span> had_lead hl <span class="kw">ON</span> hl.match_id = fr.match_id;</pre>
+        </div>
+      </div>
+
+      <!-- Q10 -->
+      <div class="query-card">
+        <div class="query-header" onclick="toggle(this)">
+          <div class="query-meta">
+            <div class="query-num">QUERY 10</div>
+            <div class="query-title">Recursive Season Standings Builder</div>
+            <div class="query-q">"Build the cumulative league table matchweek-by-matchweek."</div>
+            <div class="query-pills">
+              <span class="pill">Recursive CTE</span>
+              <span class="pill">RANK()</span>
+              <span class="pill">LAG()</span>
+            </div>
+          </div>
+          <div class="query-toggle">▾</div>
+        </div>
+        <div class="query-body">
+<pre><span class="kw">WITH RECURSIVE</span> matchweeks <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="num">1</span> <span class="kw">AS</span> mw
+  <span class="kw">UNION ALL</span>
+  <span class="kw">SELECT</span> mw + <span class="num">1</span> <span class="kw">FROM</span> matchweeks <span class="kw">WHERE</span> mw < <span class="num">38</span>
+),
+cumulative <span class="kw">AS</span> (
+  <span class="kw">SELECT</span>
+    s.team_id, t.name <span class="kw">AS</span> team_name, s.matchweek,
+    s.points, s.goal_diff, s.goals_for,
+    <span class="fn">RANK</span>() <span class="kw">OVER</span> (
+      <span class="kw">PARTITION BY</span> s.matchweek
+      <span class="kw">ORDER BY</span> s.points <span class="kw">DESC</span>, s.goal_diff <span class="kw">DESC</span>, s.goals_for <span class="kw">DESC</span>
+    ) <span class="kw">AS</span> position
+  <span class="kw">FROM</span> standings s
+  <span class="kw">JOIN</span> teams t <span class="kw">ON</span> t.team_id = s.team_id
+)
+<span class="kw">SELECT</span>
+  matchweek, position, team_name, points,
+  <span class="fn">LAG</span>(position) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> team_id <span class="kw">ORDER BY</span> matchweek
+  )                               <span class="kw">AS</span> prev_position,
+  position - <span class="fn">LAG</span>(position) <span class="kw">OVER</span> (
+    <span class="kw">PARTITION BY</span> team_id <span class="kw">ORDER BY</span> matchweek
+  )                               <span class="kw">AS</span> position_change
+<span class="kw">FROM</span> cumulative
+<span class="kw">ORDER BY</span> matchweek, position;</pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- VIEWS -->
+<section class="section" id="views">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title">Materialized Views</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="views-grid">
+
+      <div class="view-card">
+        <div class="view-name">CREATE MATERIALIZED VIEW</div>
+        <div class="view-title">UTD Season Summary</div>
+        <div class="view-desc">
+          Single-row dashboard view aggregating United's complete season record. 
+          Plug directly into any BI tool or dashboard endpoint.
+        </div>
+        <div class="view-cols">
+          <span class="view-col">matches_played</span>
+          <span class="view-col">wins / draws / losses</span>
+          <span class="view-col">goals_scored</span>
+          <span class="view-col">avg_xg_per_game</span>
+          <span class="view-col">total_points</span>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-name">CREATE MATERIALIZED VIEW</div>
+        <div class="view-title">Player Season Ratings</div>
+        <div class="view-desc">
+          Aggregated per-player season stats across all tracked matches. 
+          Ideal for scouting dashboards, player comparison tools, or fantasy scoring.
+        </div>
+        <div class="view-cols">
+          <span class="view-col">appearances</span>
+          <span class="view-col">goal_contributions</span>
+          <span class="view-col">pass_accuracy_pct</span>
+          <span class="view-col">avg_rating</span>
+          <span class="view-col">xg_overperformance</span>
+        </div>
+      </div>
+
+      <div class="view-card">
+        <div class="view-name">CREATE MATERIALIZED VIEW</div>
+        <div class="view-title">Match Tactical Overview</div>
+        <div class="view-desc">
+          Per-match context joining formations, xG, results and referee data. 
+          Powers match-by-match analyst reports with a single SELECT.
+        </div>
+        <div class="view-cols">
+          <span class="view-col">home/away formation</span>
+          <span class="view-col">xg_dominance</span>
+          <span class="view-col">result_matched_xg</span>
+          <span class="view-col">winner</span>
+          <span class="view-col">xg_winner</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title">About this Project</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>
+          This project demonstrates <strong>real-world SQL skills</strong> applied to a domain 
+          that matters — professional football analytics. Every design decision mirrors what 
+          actual sports data companies like Opta and StatsBomb use in production.
+        </p>
+        <p>
+          The schema is <strong>fully normalized to 3NF</strong>, uses ENUMs for controlled 
+          vocabularies, and includes <strong>generated columns</strong> (goal_diff, points) 
+          to guarantee data integrity without application-layer computation.
+        </p>
+        <p>
+          Queries go beyond basic SELECTs. They answer the questions a <strong>real United 
+          analyst or data journalist</strong> would ask — from Bruno's formation dependency 
+          to the statistical cost of Casemiro's red cards.
+        </p>
+        <p>
+          <strong>Materialized views</strong> are pre-aggregated for dashboard performance, 
+          and all performance-critical columns are indexed. The project is ready to connect 
+          to Metabase, Grafana, or any BI tool.
+        </p>
+      </div>
+      <div class="tech-stack">
+        <div class="tech-row">
+          <div class="tech-icon">🐘</div>
+          <div class="tech-info">
+            <div class="tech-name">PostgreSQL 16</div>
+            <div class="tech-detail">ENUMs, generated columns, materialized views</div>
+          </div>
+        </div>
+        <div class="tech-row">
+          <div class="tech-icon">🪟</div>
+          <div class="tech-info">
+            <div class="tech-name">Window Functions</div>
+            <div class="tech-detail">RANK, LAG, SUM OVER, STRING_AGG OVER</div>
+          </div>
+        </div>
+        <div class="tech-row">
+          <div class="tech-icon">🔁</div>
+          <div class="tech-info">
+            <div class="tech-name">Recursive CTEs</div>
+            <div class="tech-detail">Matchweek-by-matchweek standings builder</div>
+          </div>
+        </div>
+        <div class="tech-row">
+          <div class="tech-icon">⚡</div>
+          <div class="tech-info">
+            <div class="tech-name">Indexes & Performance</div>
+            <div class="tech-detail">9 targeted indexes on high-query columns</div>
+          </div>
+        </div>
+        <div class="tech-row">
+          <div class="tech-icon">📊</div>
+          <div class="tech-info">
+            <div class="tech-name">xG Modelling</div>
+            <div class="tech-detail">Expected goals vs actual goals across all matches</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <p>Football Match Intelligence System &mdash; Premier League 2023/24</p>
+    <p style="margin-top:8px">Built with PostgreSQL &middot; <strong>Manchester United</strong> &middot; SQL Portfolio Project</p>
+  </div>
+</footer>
+
+<script>
+  function toggle(header) {
+    const body   = header.nextElementSibling;
+    const icon   = header.querySelector('.query-toggle');
+    const isOpen = body.classList.contains('open');
+    // close all
+    document.querySelectorAll('.query-body').forEach(b => b.classList.remove('open'));
+    document.querySelectorAll('.query-toggle').forEach(i => i.classList.remove('open'));
+    // open clicked one if it was closed
+    if (!isOpen) {
+      body.classList.add('open');
+      icon.classList.add('open');
+    }
+  }
+</script>
+</body>
+</html>
