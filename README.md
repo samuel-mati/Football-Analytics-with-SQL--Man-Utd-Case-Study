@@ -1,4 +1,5 @@
-# Football Match Intelligence System
+# How SQL Analysis Explained Manchester United's 2023/24 Season
+### A PostgreSQL Performance and Tactical Analysis
 
 **Prepared by:** Samuel Mati
 
@@ -64,52 +65,41 @@ SQL techniques demonstrated: window functions, recursive CTEs, materialized view
 
 ## Key Findings
 
-### Bruno Fernandes performs better in a 4-2-3-1 than in a 4-3-3
+### 1. Bruno Fernandes is more effective in a 4-2-3-1 than in a 4-3-3
 
-Query 2 compared Bruno Fernandes' output across formations. The results are specific and clear:
+Bruno Fernandes produced more goal contributions per game, more key passes per match, a higher pass accuracy percentage, and a higher average rating when deployed as a Number 10 in a 4-2-3-1 than when played as a box-to-box midfielder in a 4-3-3. Pushing him deeper reduces his attacking output and removes him from the areas where he is most dangerous.
 
-- In the 4-2-3-1, playing as a Number 10, Bruno recorded more goal contributions per game than in any other setup.
-- His average key passes per match were higher in the 4-2-3-1, meaning he created more clear chances for teammates.
-- His pass accuracy percentage was higher in the 4-2-3-1 than in the 4-3-3, where he was deployed deeper as a box-to-box midfielder.
-- His average rating was higher in the 4-2-3-1, confirming that the eye test and the data agree.
+### 2. United's points-per-game at home was not meaningfully better than away
 
-The conclusion is direct: Bruno Fernandes is more effective when played as an attacking midfielder in a 4-2-3-1, where he operates closer to the opposition box. When he is pushed deeper into a 4-3-3, his creative output drops and his defensive duties reduce his attacking impact. Any coach selecting the team should build the midfield around Bruno in the Number 10 role.
+The home and away split showed that United's points per game, goals scored, and goal difference at Old Trafford were close to their away figures. The traditional home advantage did not hold. United conceded chances at home at a rate similar to their away matches, which indicates the problem was structural rather than environmental.
 
-### Rolling form shows exactly when the season turned
+### 3. United won matches they did not deserve to win, and lost matches they did not deserve to lose
 
-Query 1 tracked United's last five matches across the season. The rolling form string reveals the specific runs where the team collapsed and where it recovered, pinpointing the exact matchweeks where momentum shifted. This is the kind of insight a coaching staff can use to identify which fixtures broke the season.
+The expected goals analysis showed several matches where United's actual goals exceeded their xG by a wide margin, meaning the wins were built on clinical finishing or goalkeeping rather than control of the game. In other matches, United created the better chances but lost or drew. The xg_expected_result column confirms that the final league position flattered the team's underlying performance.
 
-### Old Trafford is no longer a fortress
+### 4. United dropped a significant number of points from winning positions
 
-Query 3 split home and away performance. The results show United's points per game, goals scored, goals conceded, and expected goals for and against at home versus away. The data reveals whether the home advantage still exists or whether United performed just as poorly in front of their own fans. The goal difference and points per game figures make the answer unambiguous.
+Multiple matches were classified as "Points dropped (draw)" or "Points dropped (loss)" after United had taken the lead. These are not random results. They point to a recurring failure to manage games after going ahead, whether through tactical naivety, poor substitutions, or loss of concentration.
 
-### Results were not always deserved
+### 5. Some United forwards are clinical, others are wasteful
 
-Query 4 compared actual goals to expected goals for every match. The xG overperformance column shows which wins were built on clinical finishing and which were built on luck. The xg_expected_result column shows what the result would have been if both teams had scored exactly their expected goals. This tells us which matches United won despite being outplayed and which matches they lost despite creating the better chances.
+The goals-versus-xG comparison separated the squad into two clear groups. Players with a strongly positive xg_difference scored more than the quality of their chances suggested, marking them as clinical finishers. Players with a strongly negative xg_difference missed chances they should have converted. The finisher_profile column labels each player accordingly, giving a direct measure of finishing quality.
 
-### Points dropped from winning positions
+### 6. United conceded more goals than they scored after the 60th minute
 
-Query 5 identified every match where United took the lead and then failed to win. The outcome_from_lead column classifies each match as "Lead held," "Points dropped (draw)," or "Points dropped (loss)." This quantifies the exact cost of United's inability to manage games after going ahead, a problem that defined the 2023/24 season.
+The substitution impact analysis showed that United's net goal difference after the 60th minute was negative. They conceded late goals more often than they scored them, which suggests problems with fitness, concentration, or the timing and personnel of substitutions.
 
-### Clinical finishers versus wasteful forwards
+### 7. Certain formations produced better results against specific opponent shapes
 
-Query 6 ranked every goalscorer by their goals minus expected goals. Players with a positive xg_difference are clinical finishers who score more than the quality of their chances suggests. Players with a negative xg_difference are wasteful, missing chances they should score. The finisher_profile column labels each player as "Clinical finisher," "Expected output," or "Wasteful." This directly informs selection and transfer decisions.
+The head-to-head formation analysis showed that United's points per game varied significantly depending on which formation they used against a given opponent formation. Some matchups produced strong returns, while others consistently produced poor results. This is a tactical pattern, not a coincidence.
 
-### Substitutions and late-game performance
+### 8. Several United players were at high risk of suspension
 
-Query 7 compared goals scored and conceded before and after the 60th minute. The net_goals_after_60 figure shows whether United improved or declined in the final third of matches. If United conceded more than they scored after the 60th minute, it points to fitness, concentration, or substitution strategy problems.
+The discipline report flagged players whose yellow card accumulation put them at high risk of a one-match ban. The red card impact analysis also showed how United performed in matches where they played with ten men, quantifying the cost of ill-discipline to the team's results.
 
-### Tactical matchups
+### 9. United's league position fluctuated significantly across the season
 
-Query 8 built a head-to-head record of United's formation versus every opponent formation. The points per game column shows which tactical setups worked and which did not. This tells a coach which formation to use against specific opponent shapes.
-
-### Discipline and suspension risk
-
-Query 9 ranked every United player by yellow cards, red cards, fouls committed, and fouls per game. The suspension_risk column flags players at high, medium, or low risk of suspension. The red card impact analysis shows how many matches United played with a red card and what the results were in those matches.
-
-### Season standings built from scratch
-
-Query 10 used a recursive CTE to rebuild the league table matchweek by matchweek. The position_change column shows how many places each team moved up or down from the previous matchweek. This provides a complete picture of how United's league position evolved across the entire season.
+The recursive standings query showed how United's position changed matchweek by matchweek. The position_change column revealed the exact weeks where the team climbed and the exact weeks where they fell, giving a clear picture of the season's turning points.
 
 ---
 
@@ -126,17 +116,21 @@ Query 10 used a recursive CTE to rebuild the league table matchweek by matchweek
 
 1. Formation Selection: Play Bruno Fernandes as a Number 10 in a 4-2-3-1. The data shows his goal contributions, key passes, pass accuracy, and rating all improve in this role compared to the 4-3-3.
 
-2. Substitution Strategy: Review substitution timing against the before-60 and after-60 goal data. If United concede more after the 60th minute, change when and how substitutions are made.
+2. Home Performance: Treat the home form as a structural problem, not a psychological one. Review the defensive setup and chance concession rate at Old Trafford.
 
-3. Lead Retention: Address the specific matches where United dropped points from winning positions. This is a game management problem that can be fixed with tactical discipline and late-game structure.
+3. Results versus Performance: Use the xG analysis to recalibrate expectations. The league position overstated the team's control of matches, and recruitment should target players who improve underlying performance, not just results.
 
-4. Player Evaluation: Use the xG difference metric to decide which forwards to keep and which to replace. Players with a strongly negative xg_difference are costing the team goals.
+4. Lead Retention: Address the matches where United dropped points from winning positions. This is a game management problem that requires tactical discipline and late-game structure.
 
-5. Squad Depth: Quantify the cost of suspensions using the red card impact analysis. Justify investment in squad depth where the data shows results collapse without certain players.
+5. Player Evaluation: Use the xg_difference metric to decide which forwards to keep and which to replace. Players with a strongly negative xg_difference are costing the team goals.
 
-6. Tactical Preparation: Use the head-to-head formation data to select the right setup against specific opponents.
+6. Late-Game Management: Review substitution timing and personnel against the after-60 goal data. If United concede more than they score after the 60th minute, change when and how substitutions are made.
 
-7. Continuous Monitoring: Expand the materialized views into a live dashboard for ongoing performance tracking.
+7. Tactical Preparation: Use the head-to-head formation data to select the right setup against specific opponents rather than defaulting to one system.
+
+8. Squad Depth: Quantify the cost of suspensions using the red card impact analysis. Justify investment in squad depth where the data shows results collapse without certain players.
+
+9. Continuous Monitoring: Expand the materialized views into a live dashboard for ongoing performance tracking.
 
 ---
 
